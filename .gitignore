@@ -1,2 +1,4 @@
 test_images
 pose_classifier.pth
+db_photo_labels.json
+.env
