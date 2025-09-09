@@ -1,0 +1,66 @@
+[
+	{
+		"id" : 11,
+		"name" : "Abs & Thighs"
+	},
+	{
+		"id" : 5,
+		"name" : "Back Double Biceps"
+	},
+	{
+		"id" : 10,
+		"name" : "Back Lat Spread"
+	},
+	{
+		"id" : 2,
+		"name" : "Back Relaxed"
+	},
+	{
+		"id" : 6,
+		"name" : "Front Double Biceps"
+	},
+	{
+		"id" : 7,
+		"name" : "Front Lat Spread"
+	},
+	{
+		"id" : 1,
+		"name" : "Front Relaxed"
+	},
+	{
+		"id" : 16,
+		"name" : "Quarter Turn"
+	},
+	{
+		"id" : 3,
+		"name" : "Quarter Turn (Left)"
+	},
+	{
+		"id" : 4,
+		"name" : "Quarter Turn (Right)"
+	},
+	{
+		"id" : 14,
+		"name" : "Side Chest"
+	},
+	{
+		"id" : 8,
+		"name" : "Side Chest (Left)"
+	},
+	{
+		"id" : 9,
+		"name" : "Side Chest (Right)"
+	},
+	{
+		"id" : 15,
+		"name" : "Side Tricep"
+	},
+	{
+		"id" : 12,
+		"name" : "Side Tricep (Left)"
+	},
+	{
+		"id" : 13,
+		"name" : "Side Tricep (Right)"
+	}
+]

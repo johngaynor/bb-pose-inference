@@ -3,3 +3,5 @@ images
 pose_classifier.pth
 pose_classifier_complete.pth
 class_mapping.json
+venv
+__pycache__
