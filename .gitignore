@@ -5,3 +5,5 @@ pose_classifier_complete.pth
 class_mapping.json
 venv
 __pycache__
+db_labels.json
+poses.json

@@ -7,6 +7,13 @@ This module handles:
 3. Organizing images from ./images into training/validation directories
 4. Creating proper directory structure for PyTorch ImageFolder
 5. Creating data loaders for training
+
+Sample SQL query to grab labels from the database:
+    select 'training' as source, poseId, s3Filename
+        from physiquePoseClassification
+    union
+    select 'checkins' as source, poseId, s3Filename
+        from checkInsAttachments
 """
 import torch
 from torchvision import datasets, transforms
@@ -19,15 +26,20 @@ import boto3
 from tqdm import tqdm
 from config.config import TRAIN_DIR, VAL_DIR, BATCH_SIZE, NUM_WORKERS, CLASS_MAPPING_PATH
 
-def download_images_from_s3(bucket_name="checkin-poses", local_dir="images"):
+def download_images_from_s3(bucket_names=["checkin-poses", "pose-classification-photos"], local_dir="images"):
     """
-    Download images from S3 bucket using boto3.
+    Download images from multiple S3 buckets using boto3.
     
     Args:
-        bucket_name (str): Name of the S3 bucket
+        bucket_names (list): List of S3 bucket names to download from
         local_dir (str): Local directory to download images to
     """
+    # Handle backward compatibility - if string passed, convert to list
+    if isinstance(bucket_names, str):
+        bucket_names = [bucket_names]
+    
     print(f"Checking for existing images in {local_dir}...")
+    print(f"Will download from {len(bucket_names)} bucket(s): {', '.join(bucket_names)}")
     
     # Create local directory if it doesn't exist
     Path(local_dir).mkdir(parents=True, exist_ok=True)
@@ -68,67 +80,91 @@ def download_images_from_s3(bucket_name="checkin-poses", local_dir="images"):
         print("  - Or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables")
         print("  - Or ensure IAM role is configured if running on EC2")
         return False
+
+    # Track overall statistics
+    total_downloaded = 0
+    total_skipped = 0
+    total_found = 0
     
-    try:
-        # List all objects in the bucket
-        print("Fetching list of objects from S3...")
-        paginator = s3_client.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=bucket_name)
+    # Download from each bucket
+    for bucket_idx, bucket_name in enumerate(bucket_names, 1):
+        print(f"\n📦 Processing bucket {bucket_idx}/{len(bucket_names)}: {bucket_name}")
+        print("-" * 60)
         
-        # Collect all image files
-        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
-        image_objects = []
-        
-        for page in pages:
-            if 'Contents' in page:
-                for obj in page['Contents']:
-                    key = obj['Key']
-                    if any(key.lower().endswith(ext) for ext in image_extensions):
-                        image_objects.append(key)
-        
-        print(f"Found {len(image_objects)} images in S3 bucket")
-        
-        if not image_objects:
-            print("No images found in S3 bucket!")
-            return False
-        
-        # Download images with progress bar
-        downloaded_count = 0
-        skipped_count = 0
-        
-        for key in tqdm(image_objects, desc="Downloading images"):
-            local_path = Path(local_dir) / key
+        try:
+            # List all objects in the current bucket
+            print(f"Fetching list of objects from {bucket_name}...")
+            paginator = s3_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=bucket_name)
             
-            # Skip if file already exists and has the same size
-            if local_path.exists():
+            # Collect all image files from this bucket
+            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
+            image_objects = []
+            
+            for page in pages:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        key = obj['Key']
+                        if any(key.lower().endswith(ext) for ext in image_extensions):
+                            image_objects.append(key)
+            
+            bucket_image_count = len(image_objects)
+            total_found += bucket_image_count
+            print(f"Found {bucket_image_count} images in bucket '{bucket_name}'")
+            
+            if not image_objects:
+                print(f"No images found in bucket '{bucket_name}', skipping...")
+                continue
+            
+            # Download images from this bucket with progress bar
+            bucket_downloaded = 0
+            bucket_skipped = 0
+            
+            progress_desc = f"Downloading from {bucket_name}"
+            for key in tqdm(image_objects, desc=progress_desc, leave=False):
+                local_path = Path(local_dir) / key
+                
+                # Skip if file already exists and has the same size
+                if local_path.exists():
+                    try:
+                        # Get S3 object info
+                        response = s3_client.head_object(Bucket=bucket_name, Key=key)
+                        s3_size = response['ContentLength']
+                        local_size = local_path.stat().st_size
+                        
+                        if s3_size == local_size:
+                            bucket_skipped += 1
+                            continue
+                    except Exception:
+                        pass  # Re-download if we can't compare sizes
+                
+                # Create parent directory if needed
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                # Download the file
                 try:
-                    # Get S3 object info
-                    response = s3_client.head_object(Bucket=bucket_name, Key=key)
-                    s3_size = response['ContentLength']
-                    local_size = local_path.stat().st_size
-                    
-                    if s3_size == local_size:
-                        skipped_count += 1
-                        continue
-                except Exception:
-                    pass  # Re-download if we can't compare sizes
+                    s3_client.download_file(bucket_name, key, str(local_path))
+                    bucket_downloaded += 1
+                except Exception as e:
+                    print(f"Failed to download {key} from {bucket_name}: {e}")
             
-            # Create parent directory if needed
-            local_path.parent.mkdir(parents=True, exist_ok=True)
+            # Update totals
+            total_downloaded += bucket_downloaded
+            total_skipped += bucket_skipped
             
-            # Download the file
-            try:
-                s3_client.download_file(bucket_name, key, str(local_path))
-                downloaded_count += 1
-            except Exception as e:
-                print(f"Failed to download {key}: {e}")
-        
-        print(f"Download complete! Downloaded: {downloaded_count}, Skipped: {skipped_count}")
-        return True
-        
-    except Exception as e:
-        print(f"ERROR: Failed to download images from S3: {e}")
-        return False
+            print(f"✅ Bucket '{bucket_name}': Downloaded {bucket_downloaded}, Skipped {bucket_skipped}")
+            
+        except Exception as e:
+            print(f"❌ ERROR: Failed to download from bucket '{bucket_name}': {e}")
+            continue
+    
+    # Final summary
+    print(f"\n🎉 Multi-bucket download complete!")
+    print(f"📊 Total found: {total_found} images across {len(bucket_names)} bucket(s)")
+    print(f"⬇️  Total downloaded: {total_downloaded}")
+    print(f"⏭️  Total skipped: {total_skipped}")
+    
+    return total_downloaded > 0 or total_skipped > 0
 
 
 def sort_images_to_datasets(images_dir="images", labels_file="config/db_labels.json", poses_file="config/poses.json", validation_split=0.2, random_seed=42):
