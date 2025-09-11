@@ -1,9 +1,6 @@
 test_images
 images
-pose_classifier.pth
-pose_classifier_complete.pth
-class_mapping.json
-venv
+pose_classifier*
+mappings/
+.venv/
 __pycache__
-db_labels.json
-poses.json
