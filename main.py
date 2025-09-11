@@ -3,7 +3,8 @@ Main script for data loading/preproccessing, model creation, training, and savin
 """
 import torch
 from data import download_images_from_s3, sort_images_to_datasets, create_data_loaders
-from model import create_model, save_model, load_model, train_model
+from model import create_model, save_model, train_model
+from config import EPOCHS, LEARNING_RATE, PATIENCE
 
 # Download images
 print(f"---------- STARTING PROCESS ----------")
@@ -26,9 +27,9 @@ trained_model, training_history = train_model(
     train_loader=train_loader,
     val_loader=val_loader,
     device=device,
-    num_epochs=25,           
-    learning_rate=0.001,    
-    patience=7              
+    num_epochs=EPOCHS,
+    learning_rate=LEARNING_RATE,
+    patience=PATIENCE
 )
 
 # Save the trained model
