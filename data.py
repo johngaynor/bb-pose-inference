@@ -24,7 +24,7 @@ import random
 from pathlib import Path
 import boto3
 from tqdm import tqdm
-from config.config import TRAIN_DIR, VAL_DIR, BATCH_SIZE, NUM_WORKERS, CLASS_MAPPING_PATH
+from config import TRAIN_DIR, VAL_DIR, BATCH_SIZE, NUM_WORKERS, CLASS_MAPPING_PATH
 
 def download_images_from_s3(bucket_names=["checkin-poses", "pose-classification-photos"], local_dir="images"):
     """
