@@ -185,7 +185,7 @@ def main():
     
     # Configuration
     BUCKET_NAMES = ["checkin-poses", "checkin-photos"]  # Add your bucket names here
-    LABELS_FILE = "config/db_labels.json"
+    LABELS_FILE = "mappings/db_labels.json"
     
     print("🧹 S3 Image Cleansing Tool")
     print("=" * 50)
