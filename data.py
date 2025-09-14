@@ -3,7 +3,7 @@ Data processing and loading utilities for pose classification.
 
 This module handles:
 1. Downloading images from S3 bucket
-2. Loading and parsing the labels from config/db_labels.json
+2. Loading and parsing the labels from mappings/db_labels.json
 3. Organizing images from ./images into training/validation directories
 4. Creating proper directory structure for PyTorch ImageFolder
 5. Creating data loaders for training
@@ -167,7 +167,7 @@ def download_images_from_s3(bucket_names=["checkin-poses", "pose-classification-
     return total_downloaded > 0 or total_skipped > 0
 
 
-def sort_images_to_datasets(images_dir="images", labels_file="config/db_labels.json", poses_file="config/poses.json", validation_split=0.2, random_seed=42):
+def sort_images_to_datasets(images_dir="images", labels_file="mappings/db_labels.json", poses_file="mappings/poses.json", validation_split=0.2, random_seed=42):
     """
     Sort images from the downloaded images directory into training and validation datasets
     based on pose labels from the database.

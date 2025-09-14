@@ -10,7 +10,7 @@ from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 
-def load_db_labels(labels_file="config/db_labels.json"):
+def load_db_labels(labels_file="mappings/db_labels.json"):
     """
     Load database labels and extract S3 filenames
     

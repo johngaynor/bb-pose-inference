@@ -16,6 +16,7 @@ stats = sort_images_to_datasets()
 print(stats)
 
 # Create model
+print(f"\n---------- CREATING DATA LOADERS ----------")
 train_loader, val_loader, class_names, num_classes = create_data_loaders()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = create_model(num_classes=num_classes, device=device)
